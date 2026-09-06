@@ -1,0 +1,26 @@
+[package]
+name = "llm_input_hardening-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.llm_input_hardening]
+path = ".."
+default-features = false
+
+# Standalone crate (the root package is not a workspace), so root cargo commands
+# do not build the fuzz targets.
+[workspace]
+
+[[bin]]
+name = "sanitize"
+path = "fuzz_targets/sanitize.rs"
+test = false
+doc = false
+bench = false

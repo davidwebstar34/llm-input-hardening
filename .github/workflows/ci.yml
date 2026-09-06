@@ -1,0 +1,187 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras
+
+      - name: Guard against committed generated artifacts
+        run: |
+          tracked="$(git ls-files \
+            'site/**' \
+            'target/**' \
+            'bench/results/latest.json' \
+            'bench/results/bakeoff_latest.json' \
+            'bench/results/bakeoff_smoke_latest.json' \
+            'bench/results/bakeoff_latest.md' \
+            'bench/results/bakeoff_smoke_latest.md' \
+            'bench/results/bakeoff_diff_latest.json' \
+            'bench/results/bakeoff_diff_latest.md' \
+            'bench/results/microbench_latest.json' \
+            'bench/results/classifier_lift.json' \
+            'bench/obfuscation_corpus/nightly_mutations.json' \
+            'bench/results/assets/bench_*.png' \
+            'bench/results/assets/bench_*.svg' \
+            'bench/results/bakeoff_mutation_latest.md')"
+          if [ -n "$tracked" ]; then
+            echo "Generated artifacts are tracked in git:"
+            echo "$tracked"
+            exit 1
+          fi
+
+      - name: Lint Python
+        run: uv run ruff check .
+
+      - name: Rust format check
+        run: cargo fmt --all -- --check
+
+      - name: Rust lint
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Cargo audit
+        run: cargo audit
+
+      - name: Audit runtime extras
+        run: |
+          mkdir -p .tmp
+          uv export --frozen --all-extras --no-dev --no-editable --no-emit-project --no-header --no-annotate --output-file .tmp/requirements-audit.txt
+          uv run python bench/assert_audit_scope.py --requirements .tmp/requirements-audit.txt --require confusable-homoglyphs
+          uv run pip-audit --strict --progress-spinner off -r .tmp/requirements-audit.txt
+
+      - name: Audit all locked Python dependencies on every platform
+        run: uv run --locked python scripts/audit_dependencies.py
+
+  test:
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras
+
+      - name: Build extension
+        run: uv run maturin develop --release --locked
+
+      - name: Run tests
+        run: uv run python -m pytest -q
+
+  coverage:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: astral-sh/setup-uv@v3
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras
+
+      - name: Build extension
+        run: uv run maturin develop --release --locked
+
+      - name: Python coverage
+        run: uv run python -m pytest -q --cov=llm_input_hardening --cov-report=term-missing --cov-report=xml
+
+      - name: Rust coverage
+        run: cargo llvm-cov --all-features --no-default-features --summary-only
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: ignore
+
+  wheel-smoke:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras
+
+      - name: Build wheel
+        run: uv run maturin build --release --locked --out dist --compatibility pypi
+
+      - name: Install wheel in a clean environment
+        run: |
+          uv venv .tmp/wheel-smoke
+          uv pip install --python .tmp/wheel-smoke/bin/python dist/*.whl
+
+      - name: Smoke test installed wheel
+        run: |
+          .tmp/wheel-smoke/bin/python - <<'PY'
+          from llm_input_hardening import meter, sanitize, sanitize_and_decide, sanitize_json
+
+          clean, report = sanitize("abc\u202Edef", policy="balanced_chat")
+          assert clean == "abcdef"
+          assert report["changed"] is True
+
+          payload, _ = sanitize_json({"prompt": "x\u200dy"}, policy="code_mode")
+          assert payload["prompt"] == "xy"
+
+          _, _, decision = sanitize_and_decide("abc\u202Edef")
+          assert decision["action"] == "reject"
+
+          metered = meter("plain text")
+          assert "tokens_after" in metered
+          PY

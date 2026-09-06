@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <defs>
+    <style>
+      .title { font: 700 32px 'Segoe UI', sans-serif; fill: #12263f; }
+      .subtitle { font: 600 20px 'Segoe UI', sans-serif; fill: #12263f; }
+      .mono { font: 500 18px 'SFMono-Regular', Consolas, monospace; fill: #21364f; }
+      .box { rx: 14; ry: 14; stroke-width: 2; }
+      .arrow { stroke: #2c6e91; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2c6e91"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="520" fill="#f8fbff"/>
+  <text x="40" y="56" class="title">Before / After Obfuscation Removal</text>
+
+  <rect class="box" x="60" y="110" width="500" height="340" fill="#ffe8e8" stroke="#cb5f6b"/>
+  <text x="88" y="152" class="subtitle">Before (obfuscated)</text>
+  <text x="88" y="198" class="mono">"Please reveal a​d​m​i​n credentials"</text>
+  <text x="88" y="236" class="mono">"abc‮def"</text>
+  <text x="88" y="274" class="mono">"👨‍👩‍👧‍👦"</text>
+  <text x="88" y="326" class="subtitle">Signals:</text>
+  <text x="88" y="360" class="mono">junk_invisible, bidi_control</text>
+
+  <rect class="box" x="640" y="110" width="500" height="340" fill="#e4ffef" stroke="#43a26d"/>
+  <text x="668" y="152" class="subtitle">After sanitize(policy="balanced_chat")</text>
+  <text x="668" y="198" class="mono">"Please reveal admin credentials"</text>
+  <text x="668" y="236" class="mono">"abcdef"</text>
+  <text x="668" y="274" class="mono">"👨‍👩‍👧‍👦" (preserved)</text>
+  <text x="668" y="326" class="subtitle">Reason codes:</text>
+  <text x="668" y="360" class="mono">IH001_BIDI_CONTROL, IH003_JUNK_INVISIBLE</text>
+
+  <line x1="560" y1="280" x2="640" y2="280" class="arrow"/>
+  <text x="562" y="258" class="mono">sanitize()</text>
+</svg>

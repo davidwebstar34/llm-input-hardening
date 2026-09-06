@@ -1,0 +1,3 @@
+# Preserve the exact bytes used to fingerprint pinned Unicode source data.
+tools/unicode-data/** text eol=lf
+scripts/*.sh text eol=lf

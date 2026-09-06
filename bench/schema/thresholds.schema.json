@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-input-hardening.dev/schema/thresholds.schema.json",
+  "title": "Bakeoff Threshold Policy",
+  "type": "object",
+  "required": ["required_engines", "corpus", "engines", "warnings"],
+  "additionalProperties": false,
+  "properties": {
+    "required_engines": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["must_be_available", "require_version"],
+        "additionalProperties": false,
+        "properties": {
+          "must_be_available": { "type": "boolean" },
+          "require_version": { "type": "boolean" }
+        }
+      }
+    },
+    "corpus": {
+      "type": "object",
+      "required": [
+        "label_min_support",
+        "critical_labels",
+        "max_zero_support_critical_labels"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "label_min_support": { "type": "integer", "minimum": 0 },
+        "critical_labels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "bidi_control",
+              "junk_invisible",
+              "default_ignorable",
+              "tag_char",
+              "variation_selector_excess",
+              "invalid_variation_selector",
+              "control_or_format",
+              "line_separator",
+              "normalization_amplified",
+              "base64ish_blob",
+              "hex_blob",
+              "encoded_blob",
+              "high_entropy",
+              "high_combining_ratio",
+              "excessive_combining_stack",
+              "confusable_mixed_script",
+              "whole_script_confusable",
+              "confusable_styled"
+            ]
+          }
+        },
+        "max_zero_support_critical_labels": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "major_label_families": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "labels",
+              "min_benign_counterexamples",
+              "benign_case_name_prefixes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "labels": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "bidi_control",
+                    "junk_invisible",
+                    "default_ignorable",
+                    "tag_char",
+                    "variation_selector_excess",
+                    "invalid_variation_selector",
+                    "control_or_format",
+                    "line_separator",
+                    "normalization_amplified",
+                    "base64ish_blob",
+                    "hex_blob",
+                    "encoded_blob",
+                    "high_entropy",
+                    "high_combining_ratio",
+                    "excessive_combining_stack",
+                    "confusable_mixed_script",
+                    "whole_script_confusable",
+                    "confusable_styled"
+                  ]
+                }
+              },
+              "min_benign_counterexamples": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "benign_case_name_prefixes": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 },
+                "uniqueItems": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "engines": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "min_micro_precision",
+          "min_micro_recall",
+          "min_postcondition_pass_rate",
+          "max_benign_changed_rate",
+          "label_min_recall"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "min_micro_precision": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "min_micro_recall": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "min_postcondition_pass_rate": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "max_benign_changed_rate": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "label_min_recall": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "object",
+      "required": [
+        "max_large_token_delta_rate",
+        "max_unstable_invariance_rate"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "max_large_token_delta_rate": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "max_unstable_invariance_rate": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    }
+  }
+}

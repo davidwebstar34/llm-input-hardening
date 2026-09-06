@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640">
+  <defs>
+    <style>
+      .title { font: 700 34px 'Segoe UI', sans-serif; fill: #10243e; }
+      .label { font: 600 20px 'Segoe UI', sans-serif; fill: #10243e; }
+      .body { font: 400 16px 'Segoe UI', sans-serif; fill: #1f2f44; }
+      .box { rx: 16; ry: 16; stroke-width: 2; }
+      .arrow { stroke: #355c7d; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#355c7d"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="640" fill="#f6fbff"/>
+  <text x="40" y="58" class="title">Layered LLM Guardrail Architecture</text>
+
+  <rect class="box" x="60" y="120" width="240" height="130" fill="#dff3ff" stroke="#5aa0d8"/>
+  <text x="84" y="160" class="label">Untrusted Inputs</text>
+  <text x="84" y="192" class="body">User prompts</text>
+  <text x="84" y="216" class="body">Tool arguments</text>
+  <text x="84" y="240" class="body">Retrieved passages</text>
+
+  <rect class="box" x="350" y="90" width="310" height="190" fill="#d7ffe9" stroke="#3ea96a"/>
+  <text x="380" y="130" class="label">Deterministic Text Integrity</text>
+  <text x="380" y="162" class="body">llm-input-hardening</text>
+  <text x="380" y="192" class="body">- canonicalization</text>
+  <text x="380" y="216" class="body">- invisible/control cleanup</text>
+  <text x="380" y="240" class="body">- reason-code telemetry</text>
+
+  <rect class="box" x="710" y="120" width="240" height="130" fill="#fff0d9" stroke="#de9a3a"/>
+  <text x="740" y="160" class="label">Orchestration</text>
+  <text x="740" y="192" class="body">Prompt assembly</text>
+  <text x="740" y="216" class="body">Routing / tools</text>
+
+  <rect class="box" x="980" y="90" width="180" height="190" fill="#ffe1e3" stroke="#c96d77"/>
+  <text x="1004" y="130" class="label">Model Safety</text>
+  <text x="1004" y="162" class="body">Moderation</text>
+  <text x="1004" y="186" class="body">Policy checks</text>
+  <text x="1004" y="210" class="body">Response filters</text>
+
+  <line x1="300" y1="185" x2="350" y2="185" class="arrow"/>
+  <line x1="660" y1="185" x2="710" y2="185" class="arrow"/>
+  <line x1="950" y1="185" x2="980" y2="185" class="arrow"/>
+
+  <rect class="box" x="350" y="340" width="810" height="220" fill="#ffffff" stroke="#d6e2ee"/>
+  <text x="380" y="382" class="label">Key principle</text>
+  <text x="380" y="414" class="body">Use deterministic controls to reduce character-level uncertainty first, then apply probabilistic policy layers.</text>
+  <text x="380" y="444" class="body">This avoids paying expensive model-level guardrail cost for failures that can be removed at the text boundary.</text>
+  <text x="380" y="486" class="label">Boundaries</text>
+  <text x="380" y="516" class="body">Text integrity does not detect semantic jailbreak intent; semantic systems remain required.</text>
+</svg>

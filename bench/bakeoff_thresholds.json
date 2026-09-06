@@ -1,0 +1,119 @@
+{
+  "required_engines": {
+    "llm-input-hardening": {
+      "must_be_available": true,
+      "require_version": true
+    },
+    "llm-guard:InvisibleText": {
+      "must_be_available": true,
+      "require_version": true
+    },
+    "confusable-homoglyphs": {
+      "must_be_available": true,
+      "require_version": true
+    }
+  },
+  "corpus": {
+    "label_min_support": 10,
+    "critical_labels": [
+      "bidi_control",
+      "junk_invisible",
+      "default_ignorable",
+      "tag_char",
+      "variation_selector_excess",
+      "invalid_variation_selector",
+      "control_or_format",
+      "line_separator",
+      "normalization_amplified",
+      "base64ish_blob",
+      "hex_blob",
+      "encoded_blob",
+      "high_entropy",
+      "high_combining_ratio",
+      "excessive_combining_stack",
+      "confusable_mixed_script",
+      "whole_script_confusable",
+      "confusable_styled"
+    ],
+    "max_zero_support_critical_labels": 0,
+    "major_label_families": {
+      "unicode_invisibles_and_bidi": {
+        "labels": [
+          "bidi_control",
+          "junk_invisible",
+          "default_ignorable",
+          "tag_char",
+          "variation_selector_excess",
+          "invalid_variation_selector",
+          "control_or_format",
+          "line_separator",
+          "normalization_amplified"
+        ],
+        "min_benign_counterexamples": 10,
+        "benign_case_name_prefixes": [
+          "benign_emoji",
+          "benign_persian",
+          "benign_arabic",
+          "benign_hebrew"
+        ]
+      },
+      "script_and_confusables": {
+        "labels": [
+          "confusable_mixed_script",
+          "whole_script_confusable",
+          "confusable_styled",
+          "high_combining_ratio",
+          "excessive_combining_stack"
+        ],
+        "min_benign_counterexamples": 10,
+        "benign_case_name_prefixes": [
+          "benign_"
+        ]
+      },
+      "encoded_blobs": {
+        "labels": [
+          "base64ish_blob",
+          "hex_blob",
+          "encoded_blob",
+          "high_entropy"
+        ],
+        "min_benign_counterexamples": 10,
+        "benign_case_name_prefixes": [
+          "benign_encoded_"
+        ]
+      }
+    }
+  },
+  "engines": {
+    "llm-input-hardening": {
+      "min_micro_precision": 0.95,
+      "min_micro_recall": 0.95,
+      "min_postcondition_pass_rate": 1.0,
+      "max_benign_changed_rate": 0.01,
+      "label_min_recall": {
+        "bidi_control": 0.95,
+        "junk_invisible": 0.95,
+        "default_ignorable": 0.95,
+        "tag_char": 0.95,
+        "variation_selector_excess": 0.95,
+        "invalid_variation_selector": 1.0,
+        "control_or_format": 0.95,
+        "line_separator": 0.95,
+        "normalization_amplified": 0.95,
+        "base64ish_blob": 0.95,
+        "hex_blob": 0.95,
+        "encoded_blob": 0.95,
+        "high_entropy": 0.95,
+        "high_combining_ratio": 0.95,
+        "excessive_combining_stack": 0.95,
+        "confusable_mixed_script": 0.95,
+        "whole_script_confusable": 0.95,
+        "confusable_styled": 0.95
+      }
+    }
+  },
+  "warnings": {
+    "max_large_token_delta_rate": 0.15,
+    "max_unstable_invariance_rate": 0.25
+  }
+}

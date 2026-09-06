@@ -1,0 +1,68 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "llm-input-hardening"
+version = "3.0.0"
+description = "Deterministic Unicode-aware input hardening for LLM applications."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "David Webster" }]
+maintainers = [{ name = "David Webster" }]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "licenses/*.txt"]
+keywords = ["llm", "security", "unicode", "sanitization", "prompting"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Rust",
+  "Topic :: Security",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Text Processing :: Linguistic",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/davidwebstar34/llm-input-hardening"
+Source = "https://github.com/davidwebstar34/llm-input-hardening"
+Issues = "https://github.com/davidwebstar34/llm-input-hardening/issues"
+Changelog = "https://github.com/davidwebstar34/llm-input-hardening/releases"
+
+[project.scripts]
+llm-input-hardening = "llm_input_hardening.cli:main"
+
+[project.optional-dependencies]
+security = ["confusable-homoglyphs>=3.3.1"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-cov>=5.0.0",
+  "maturin>=1.7,<2.0",
+  "ruff>=0.9.0",
+  "jsonschema>=4.23.0",
+  "pyperf>=2.9.0",
+  "pip-audit>=2.8.0",
+  "twine>=5.1.1",
+]
+
+[tool.maturin]
+module-name = "llm_input_hardening._core"
+python-source = "python"
+python-packages = ["llm_input_hardening"]
+profile = "release"
+compatibility = "pypi"
+features = ["python"]
+# Keep marketing/article content out of the distribution.
+exclude = ["marketing/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

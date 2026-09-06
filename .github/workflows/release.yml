@@ -1,0 +1,245 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check release tag, versions and changelog
+        run: python scripts/check_release.py --tag "$GITHUB_REF_NAME"
+      - name: Require successful main CI for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion="$(gh run list --workflow ci.yml --branch main --commit "$GITHUB_SHA" --event push --limit 1 --json conclusion --jq '.[0].conclusion')"
+          if [ "$conclusion" != success ]; then
+            echo "The latest main CI run for $GITHUB_SHA must succeed before release (got: $conclusion)." >&2
+            exit 1
+          fi
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: astral-sh/setup-uv@v3
+      - name: Install locked dependencies
+        run: uv sync --frozen --all-extras
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Audit release runtime dependencies
+        run: |
+          cargo audit
+          mkdir -p .tmp
+          uv export --frozen --all-extras --no-dev --no-editable --no-emit-project --no-header --no-annotate --output-file .tmp/requirements-audit.txt
+          uv run python bench/assert_audit_scope.py --requirements .tmp/requirements-audit.txt --require confusable-homoglyphs
+          uv run pip-audit --strict --progress-spinner off -r .tmp/requirements-audit.txt
+      - name: Audit all locked Python dependencies on every platform
+        run: uv run --locked python scripts/audit_dependencies.py
+      - name: Build and test the release revision
+        run: |
+          uv run maturin develop --release --locked
+          uv run python -m pytest -q
+          cargo test --locked --no-default-features
+      - name: Smoke test the installed wheel in a clean environment
+        run: |
+          uv run maturin build --release --locked --out .tmp/release-wheel --compatibility pypi
+          uv venv .tmp/release-smoke
+          uv pip install --python .tmp/release-smoke/bin/python .tmp/release-wheel/*.whl
+          .tmp/release-smoke/bin/python - <<'PY'
+          from llm_input_hardening import sanitize, sanitize_and_decide, sanitize_json
+          assert sanitize("abc\u202edef")[0] == "abcdef"
+          assert sanitize_and_decide("abc\u202edef")[2]["action"] == "reject"
+          assert sanitize_json({"prompt": "ab\u200bcd"})[0] == {"prompt": "abcd"}
+          PY
+
+  build-wheels:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux glibc (manylinux) — x86_64 and aarch64 (Graviton / ARM Docker)
+          - os: ubuntu-latest
+            target: x86_64
+            manylinux: "2014"
+            artifact: linux-x86_64
+          - os: ubuntu-latest
+            target: aarch64
+            manylinux: "2014"
+            artifact: linux-aarch64
+          # Linux musl (Alpine) — x86_64 and aarch64
+          - os: ubuntu-latest
+            target: x86_64
+            manylinux: musllinux_1_2
+            artifact: musllinux-x86_64
+          - os: ubuntu-latest
+            target: aarch64
+            manylinux: musllinux_1_2
+            artifact: musllinux-aarch64
+          # macOS — Apple Silicon and Intel (macos-latest is arm64-only, so an
+          # explicit x86_64 target is required to ship an Intel-mac wheel)
+          - os: macos-latest
+            target: aarch64
+            manylinux: "off"
+            artifact: macos-arm64
+          - os: macos-15-intel
+            target: x86_64
+            manylinux: "off"
+            artifact: macos-x86_64
+          # Windows x64
+          - os: windows-latest
+            target: x64
+            manylinux: "off"
+            artifact: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          target: ${{ matrix.target }}
+          args: --release --locked --out dist --compatibility pypi
+          manylinux: ${{ matrix.manylinux }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.artifact }}
+          path: dist
+
+  build-sdist:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-sdist
+          path: dist
+
+  publish:
+    needs: [validate, build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v3
+
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+
+      - name: Collect distributions
+        run: |
+          mkdir -p .tmp/dist
+          find dist -type f \( -name '*.whl' -o -name '*.tar.gz' \) -exec cp {} .tmp/dist/ \;
+
+      - name: Install the audited publishing tools
+        run: uv sync --locked --only-group dev --no-install-project
+
+      - name: Validate distributions
+        run: uv run --locked --no-sync python -m twine check .tmp/dist/*
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: .tmp/dist
+          skip-existing: true
+
+      - name: Verify PyPI files match the uploaded distributions
+        run: python scripts/verify_pypi.py --version "${GITHUB_REF_NAME#v}" --dist-dir .tmp/dist
+
+  verify-installed:
+    needs: publish
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: .tmp/pypi-smoke/bin/python
+          - os: macos-latest
+            python: .tmp/pypi-smoke/bin/python
+          - os: windows-latest
+            python: .tmp/pypi-smoke/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+      - name: Install the published wheel from PyPI in a clean environment
+        env:
+          SMOKE_PYTHON: ${{ matrix.python }}
+        run: |
+          uv venv --python 3.12 .tmp/pypi-smoke
+          uv pip install --python "$SMOKE_PYTHON" --no-cache --index-url https://pypi.org/simple --only-binary :all: "llm-input-hardening==${GITHUB_REF_NAME#v}"
+      - name: Check published version and public API
+        env:
+          SMOKE_PYTHON: ${{ matrix.python }}
+        run: |
+          "$SMOKE_PYTHON" - <<'PY'
+          import os
+          from importlib.metadata import version
+          from llm_input_hardening import __version__, sanitize, sanitize_and_decide, sanitize_assembled, sanitize_json
+
+          expected = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          assert __version__ == version("llm-input-hardening") == expected
+          assert sanitize("abc\u202edef")[0] == "abcdef"
+          assert sanitize_and_decide("abc\u202edef")[2]["action"] == "reject"
+          assert sanitize_assembled(["ab" * 20, "cd" * 20])[2]["action"] == "quarantine"
+          assert sanitize_json({"prompt": "ab\u200bcd"})[0] == {"prompt": "abcd"}
+          print(f"Published llm-input-hardening {expected} passed its installed-wheel smoke test.")
+          PY
+
+  github-release:
+    needs: verify-installed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: dist-*
+          merge-multiple: true
+          path: dist
+      - name: Extract release notes from the validated changelog
+        run: python scripts/check_release.py --tag "$GITHUB_REF_NAME" --notes-out "$RUNNER_TEMP/release-notes.md"
+      - name: Create the GitHub Release with the same distributions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md" --latest

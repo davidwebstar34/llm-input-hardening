@@ -1,0 +1,10 @@
+llm-input-hardening
+Copyright (c) 2026 llm-input-hardening contributors
+
+Version 3.0.0 and subsequent contributions are licensed under the Apache
+License, Version 2.0. Earlier MIT-licensed material is incorporated with its
+copyright and permission notice preserved in licenses/MIT-pre-v3.txt.
+
+Unicode data files and the tables derived from them retain their Unicode
+copyright notices and are covered by licenses/Unicode-3.0.txt. Third-party
+dependencies retain their own licenses.

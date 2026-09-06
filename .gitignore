@@ -1,0 +1,37 @@
+.DS_Store
+/target/
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.dylib
+/build/
+/dist/
+*.egg-info/
+/site/
+.pytest_cache/
+.venv/
+.uv-cache/
+/.tmp/
+.ruff_cache
+.coverage
+htmlcov/
+
+# generated benchmark outputs
+bench/results/latest.json
+bench/results/bakeoff_latest.json
+bench/results/bakeoff_smoke_latest.json
+bench/results/bakeoff_latest.md
+bench/results/bakeoff_smoke_latest.md
+bench/results/bakeoff_diff_latest.json
+bench/results/bakeoff_diff_latest.md
+bench/results/microbench_latest.json
+bench/results/classifier_lift.json
+bench/results/assets/bench_*.png
+bench/results/assets/bench_*.svg
+bench/obfuscation_corpus/nightly_mutations.json
+bench/results/bakeoff_mutation_latest.md
+examples/promptfoo-redteam-overlap/cases.latest.json
+
+# Marketing / article content — not part of the shipped library.
+/marketing/

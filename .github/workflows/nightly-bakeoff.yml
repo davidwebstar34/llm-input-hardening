@@ -1,0 +1,208 @@
+name: Nightly Bakeoff
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      open_regression_issue:
+        description: "Open a GitHub issue when diff detects regression"
+        required: false
+        default: "false"
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    env:
+      OPEN_REGRESSION_ISSUE: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Build extension
+        run: .venv/bin/maturin develop --release
+
+      - name: Validate bakeoff JSON schemas
+        run: make bakeoff-schema
+
+      - name: Lint bakeoff corpus
+        run: make bakeoff-lint
+
+      - name: Run bakeoff
+        run: make bakeoff-full
+
+      - name: Validate bakeoff result schema
+        run: .venv/bin/python bench/validate_json.py --corpus bench/obfuscation_corpus/cases.json --thresholds bench/bakeoff_thresholds.json --results bench/results/bakeoff_latest.json --strict-results
+
+      - name: Assert bakeoff thresholds
+        run: make bakeoff-full-assert
+
+      - name: Download previous nightly artifact
+        id: download_previous
+        uses: dawidd6/action-download-artifact@d63b86af1b34672e53c440b1b83979861906bad7 # v24
+        with:
+          github_token: ${{ github.token }}
+          repo: ${{ github.repository }}
+          workflow: nightly-bakeoff.yml
+          workflow_conclusion: success
+          branch: main
+          allow_forks: false
+          name: llm-input-hardener-nightly-latest
+          path: .tmp/previous-nightly
+          if_no_artifact_found: warn
+
+      - name: Diff against previous nightly
+        run: |
+          mkdir -p bench/results
+          prev_json="$(find .tmp/previous-nightly -type f -name bakeoff_latest.json | head -n 1 || true)"
+          same_schema=false
+          if [ -n "$prev_json" ] && [ -f "$prev_json" ]; then
+            # Parsing errors must fail the run, not masquerade as a new baseline.
+            same_schema="$(.venv/bin/python - "$prev_json" bench/results/bakeoff_latest.json <<'PY'
+          import sys
+          from pathlib import Path
+          from bench.artifact_contracts import load_json
+          previous, current = (load_json(Path(path)) for path in sys.argv[1:])
+          for artifact in (previous, current):
+              version = artifact.get("schema_version") if isinstance(artifact, dict) else None
+              if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+                  raise SystemExit("Nightly artifact has no valid schema version")
+          print("true" if previous["schema_version"] == current["schema_version"] else "false")
+          PY
+          )"
+          fi
+          if [ "$same_schema" = true ]; then
+            .venv/bin/python bench/bakeoff_diff.py \
+              --baseline "$prev_json" \
+              --current bench/results/bakeoff_latest.json \
+              --out-json bench/results/bakeoff_diff_latest.json \
+              --out-md bench/results/bakeoff_diff_latest.md
+          else
+            echo '{"regression_detected": false, "comparison_status": "not_comparable", "reason": "no previous artifact with the current schema"}' > bench/results/bakeoff_diff_latest.json
+            cat > bench/results/bakeoff_diff_latest.md <<'EOF'
+            # Bake-off Diff Report
+
+            No previous nightly artifact with the current schema was found. This run establishes a new baseline; no regression conclusion is available.
+          EOF
+          fi
+
+      - name: Assert comparable regressions or explicit baseline transition
+        run: .venv/bin/python bench/assert_bakeoff_diff.py --in bench/results/bakeoff_diff_latest.json --allow-no-baseline
+
+      - name: Prepare nightly latest bundle
+        run: |
+          mkdir -p .tmp/nightly-latest
+          cp bench/results/bakeoff_latest.json .tmp/nightly-latest/bakeoff_latest.json
+          cp bench/results/bakeoff_latest.md .tmp/nightly-latest/results.md
+          cp bench/results/bakeoff_diff_latest.json .tmp/nightly-latest/bakeoff_diff_latest.json
+          cp bench/results/bakeoff_diff_latest.md .tmp/nightly-latest/diff_latest.md
+
+      - name: Upload nightly latest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-input-hardener-nightly-latest
+          retention-days: 30
+          path: .tmp/nightly-latest
+
+      - name: Upload nightly snapshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-input-hardener-nightly-${{ github.run_id }}
+          retention-days: 30
+          path: .tmp/nightly-latest
+
+      - name: Retain failed evaluation evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-input-hardener-nightly-failed-${{ github.run_id }}
+          retention-days: 30
+          path: |
+            bench/results/bakeoff_latest.json
+            bench/results/bakeoff_latest.md
+            bench/results/bakeoff_diff_latest.json
+            bench/results/bakeoff_diff_latest.md
+
+      - name: Open regression issue (optional)
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.open_regression_issue == 'true') || env.OPEN_REGRESSION_ISSUE == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if .venv/bin/python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("bench/results/bakeoff_diff_latest.json")
+          if not p.exists():
+              raise SystemExit(1)
+          data = json.loads(p.read_text(encoding="utf-8"))
+          raise SystemExit(0 if data.get("regression_detected") else 1)
+          PY
+          then
+            title="Nightly bakeoff regression ($(date -u +%Y-%m-%d))"
+            gh issue create \
+              --title "$title" \
+              --body-file bench/results/bakeoff_diff_latest.md \
+              --label "bakeoff,regression" || true
+          else
+            echo "No regression detected; no issue opened."
+          fi
+
+  mutation_fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Build extension
+        run: .venv/bin/maturin develop --release
+
+      - name: Generate nightly mutation corpus
+        run: .venv/bin/python bench/generate_mutation_corpus.py --out bench/obfuscation_corpus/nightly_mutations.json --count-per-operator 12 --seed ${{ github.run_id }}
+
+      - name: Validate mutation corpus schema
+        run: .venv/bin/python bench/validate_json.py --corpus bench/obfuscation_corpus/nightly_mutations.json --thresholds bench/bakeoff_thresholds.json
+
+      - name: Run bakeoff on mutation corpus
+        run: .venv/bin/python bench/run_bakeoff.py --corpus bench/obfuscation_corpus/nightly_mutations.json --out bench/results/bakeoff_mutation_latest.json --md-out bench/results/bakeoff_mutation_latest.md
+
+      - name: Validate mutation bakeoff schema
+        run: .venv/bin/python bench/validate_json.py --corpus bench/obfuscation_corpus/nightly_mutations.json --thresholds bench/bakeoff_thresholds.json --results bench/results/bakeoff_mutation_latest.json --strict-results
+
+      - name: Assert mutation case contracts
+        run: .venv/bin/python bench/assert_case_contracts.py --in bench/results/bakeoff_mutation_latest.json
+
+      - name: Upload nightly mutation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-input-hardener-nightly-mutations-${{ github.run_id }}
+          retention-days: 30
+          path: |
+            bench/obfuscation_corpus/nightly_mutations.json
+            bench/results/bakeoff_mutation_latest.json
+            bench/results/bakeoff_mutation_latest.md

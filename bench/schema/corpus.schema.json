@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-input-hardening.dev/schema/corpus.schema.json",
+  "title": "Bakeoff Corpus",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "kind", "policy", "text", "expected"],
+    "additionalProperties": false,
+    "properties": {
+      "name": { "type": "string", "minLength": 1 },
+      "kind": { "type": "string", "enum": ["attack", "benign"] },
+      "policy": {
+        "type": "string",
+        "enum": [
+          "preserve",
+          "balanced_chat",
+          "strict_exec",
+          "code_mode",
+          "balanced",
+          "strict",
+          "code"
+        ]
+      },
+      "text": { "type": "string" },
+      "expected": {
+        "type": "object",
+        "required": ["must_detect", "expected_action", "postconditions"],
+        "additionalProperties": false,
+        "properties": {
+          "must_detect": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "bidi_control",
+                "junk_invisible",
+                "default_ignorable",
+                "tag_char",
+                "variation_selector_excess",
+                "invalid_variation_selector",
+                "control_or_format",
+                "line_separator",
+                "normalization_amplified",
+                "base64ish_blob",
+                "hex_blob",
+                "encoded_blob",
+                "high_entropy",
+                "high_combining_ratio",
+                "excessive_combining_stack",
+                "confusable_mixed_script",
+                "whole_script_confusable",
+                "confusable_styled"
+              ]
+            }
+          },
+          "expected_action": {
+            "type": "string",
+            "enum": ["remove", "flag_only", "preserve"]
+          },
+          "postconditions": {
+            "type": "object",
+            "required": ["must_not_contain_codepoints"],
+            "additionalProperties": false,
+            "properties": {
+              "must_not_contain_codepoints": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "bidi_control",
+                    "junk_invisible",
+                    "default_ignorable",
+                    "tag_char",
+                    "variation_selector_excess",
+                    "control_or_format",
+                    "line_separator"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

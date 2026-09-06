@@ -1,0 +1,47 @@
+[
+  {
+    "name": "bidi_override",
+    "text": "SAFE \u202eevil payload",
+    "labels": ["bidi_control"]
+  },
+  {
+    "name": "invisible_zwsp",
+    "text": "hello\u200bworld",
+    "labels": ["junk_invisible"]
+  },
+  {
+    "name": "embedded_nul",
+    "text": "abc\u0000def",
+    "labels": ["control_or_format"]
+  },
+  {
+    "name": "base64_blob",
+    "text": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=",
+    "labels": ["base64ish_blob"]
+  },
+  {
+    "name": "hex_blob",
+    "text": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "labels": ["hex_blob"]
+  },
+  {
+    "name": "high_entropy_box",
+    "text": "\u2500\u2501\u2502\u2503\u2504\u2505\u2506\u2507\u2508\u2509\u250a\u250b\u250c\u250d\u250e\u250f\u2510\u2511\u2512\u2513\u2514\u2515\u2516\u2517\u2518\u2519\u251a\u251b\u251c\u251d\u251e\u251f\u2520\u2521\u2522\u2523\u2524\u2525\u2526\u2527\u2528\u2529\u252a\u252b\u252c\u252d\u252e\u252f\u2530\u2531\u2532\u2533\u2534\u2535\u2536\u2537\u2538\u2539\u253a\u253b\u253c\u253d\u253e\u253f\u2500\u2501\u2502\u2503\u2504\u2505\u2506\u2507\u2508\u2509\u250a\u250b\u250c\u250d\u250e\u250f\u2510\u2511\u2512\u2513\u2514\u2515\u2516\u2517\u2518\u2519\u251a\u251b\u251c\u251d\u251e\u251f\u2520\u2521\u2522\u2523\u2524\u2525\u2526\u2527\u2528\u2529\u252a\u252b\u252c\u252d\u252e\u252f\u2530\u2531\u2532\u2533\u2534\u2535\u2536\u2537\u2538\u2539\u253a\u253b\u253c\u253d\u253e\u253f\u2500\u2501\u2502\u2503\u2504\u2505\u2506\u2507\u2508\u2509\u250a\u250b\u250c\u250d\u250e\u250f\u2510\u2511\u2512\u2513\u2514\u2515\u2516\u2517\u2518\u2519\u251a\u251b\u251c\u251d\u251e\u251f\u2520\u2521\u2522\u2523\u2524\u2525\u2526\u2527\u2528\u2529\u252a\u252b\u252c\u252d\u252e\u252f\u2530\u2531\u2532\u2533\u2534\u2535\u2536\u2537\u2538\u2539\u253a\u253b\u253c\u253d\u253e\u253f\u2500\u2501\u2502\u2503\u2504\u2505\u2506\u2507\u2508\u2509\u250a\u250b\u250c\u250d\u250e\u250f\u2510\u2511\u2512\u2513\u2514\u2515\u2516\u2517\u2518\u2519\u251a\u251b\u251c\u251d\u251e\u251f\u2520\u2521\u2522\u2523\u2524\u2525\u2526\u2527\u2528\u2529\u252a\u252b\u252c\u252d\u252e\u252f\u2530\u2531\u2532\u2533\u2534\u2535\u2536\u2537\u2538\u2539\u253a\u253b\u253c\u253d\u253e\u253f",
+    "labels": ["high_entropy"]
+  },
+  {
+    "name": "mixed_script_confusable",
+    "text": "\u0440\u0430ypal login issue",
+    "labels": ["confusable_mixed_script"]
+  },
+  {
+    "name": "clean_ascii",
+    "text": "Please summarize this note in five bullet points.",
+    "labels": []
+  },
+  {
+    "name": "clean_arabic_with_zwnj",
+    "text": "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645 \u06a9\u062a\u0627\u0628",
+    "labels": []
+  }
+]

@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-input-hardening.dev/schema/bakeoff_results.schema.json",
+  "title": "Bakeoff Results",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at_utc",
+    "labels",
+    "corpus",
+    "tokenizer",
+    "env",
+    "engines",
+    "common_label_comparisons",
+    "enforcement",
+    "composition"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 4 },
+    "generated_at_utc": { "type": "string" },
+    "labels": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "corpus": {
+      "type": "object",
+      "required": [
+        "path",
+        "size",
+        "attack_cases",
+        "benign_cases",
+        "label_support",
+        "fingerprint"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "path": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "size": { "type": "integer", "minimum": 0 },
+        "attack_cases": { "type": "integer", "minimum": 0 },
+        "benign_cases": { "type": "integer", "minimum": 0 },
+        "label_support": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "tokenizer": {
+      "type": "object",
+      "required": ["backend", "resolved"],
+      "additionalProperties": true,
+      "properties": {
+        "backend": { "type": "string" },
+        "model": { "type": ["string", "null"] },
+        "resolved": { "type": "string" }
+      }
+    },
+    "env": {
+      "type": "object",
+      "required": ["git_sha", "python_version", "platform", "dependencies", "provenance"],
+      "additionalProperties": true,
+      "properties": {
+        "git_sha": { "type": ["string", "null"] },
+        "python_version": { "type": "string" },
+        "platform": { "type": "string" },
+        "provenance": {
+          "type": "object",
+          "required": ["git_dirty", "python_source_sha256", "core_binary_sha256", "policy_registry_sha256", "effective_signals_sha256", "local_build_inputs_sha256", "python_unicode_version"],
+          "properties": {
+            "git_dirty": {"type": ["boolean", "null"]},
+            "python_source_sha256": {"$ref": "#/$defs/fingerprint"},
+            "core_binary_sha256": {"$ref": "#/$defs/fingerprint"},
+            "policy_registry_sha256": {"$ref": "#/$defs/fingerprint"},
+            "effective_signals_sha256": {"$ref": "#/$defs/fingerprint"},
+            "local_build_inputs_sha256": {"$ref": "#/$defs/fingerprint"},
+            "python_unicode_version": {"type": "string"}
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "required": [
+            "llm-input-hardening",
+            "llm-guard",
+            "confusable-homoglyphs"
+          ],
+          "additionalProperties": true,
+          "properties": {
+            "llm-input-hardening": { "type": ["string", "null"] },
+            "llm-guard": { "type": ["string", "null"] },
+            "confusable-homoglyphs": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "engines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "engine",
+          "available",
+          "version",
+          "summary",
+          "per_label",
+          "details",
+          "supported_labels"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "engine": { "type": "string" },
+          "available": { "type": "boolean" },
+          "version": { "type": ["string", "null"] },
+          "error": { "type": ["string", "null"] },
+          "supported_labels": { "type": "array", "uniqueItems": true, "items": {"type": "string"} },
+          "summary": {
+            "type": "object",
+            "required": [
+              "micro_precision",
+              "micro_recall",
+              "postcondition_pass_rate",
+              "benign_changed_rate",
+              "token_delta",
+              "invariance"
+            ],
+            "properties": {
+              "micro_precision": {"$ref": "#/$defs/rate"},
+              "micro_recall": {"$ref": "#/$defs/rate"},
+              "postcondition_pass_rate": {"$ref": "#/$defs/rate"},
+              "benign_changed_rate": {"$ref": "#/$defs/rate"}
+            },
+            "additionalProperties": true
+          },
+          "per_label": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["positives", "detected", "false_positives", "predicted", "supported"],
+              "additionalProperties": true,
+              "properties": {
+                "positives": { "type": "integer", "minimum": 0 },
+                "detected": { "type": "integer", "minimum": 0 },
+                "false_positives": { "type": "integer", "minimum": 0 },
+                "predicted": { "type": "integer", "minimum": 0 },
+                "supported": { "type": "boolean" }
+              }
+            }
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "case",
+                "case_fingerprint",
+                "kind",
+                "policy",
+                "expected_labels",
+                "detected_labels",
+                "expected_action",
+                "changed",
+                "postcondition_applicable",
+                "postcondition_passed"
+              ],
+              "properties": {
+                "case": {"type": "string", "minLength": 1},
+                "case_fingerprint": {"$ref": "#/$defs/fingerprint"},
+                "kind": {"enum": ["attack", "benign"]},
+                "policy": {"type": "string", "minLength": 1},
+                "expected_labels": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+                "detected_labels": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+                "expected_action": {"enum": ["remove", "flag_only", "preserve"]},
+                "changed": {"type": "boolean"},
+                "postcondition_applicable": {"type": "boolean"},
+                "postcondition_passed": {"type": ["boolean", "null"]}
+              },
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    },
+    "common_label_comparisons": {"type": "array"},
+    "composition": {
+      "type": "object",
+      "required": ["fingerprint", "case_count", "checks", "failures", "failure_details"],
+      "properties": {
+        "fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "case_count": {"type": "integer", "minimum": 1},
+        "checks": {"type": "integer", "minimum": 1},
+        "failures": {"type": "integer", "minimum": 0},
+        "failure_details": {"type": "array"}
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "required": ["path", "fingerprint", "by_policy", "details"],
+      "properties": {
+        "path": {"type": "string"},
+        "fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "by_policy": {
+          "type": "object",
+          "required": ["preserve", "balanced_chat", "strict_exec", "code_mode"],
+          "additionalProperties": {
+            "type": "object",
+            "required": ["benign_cases", "benign_quarantine_rate", "benign_reject_rate", "decision_mismatches"],
+            "properties": {
+              "benign_cases": {"type": "integer", "minimum": 1},
+              "benign_quarantine_rate": {"type": "number", "minimum": 0, "maximum": 1},
+              "benign_reject_rate": {"type": "number", "minimum": 0, "maximum": 1},
+              "decision_mismatches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        "details": {"type": "array", "minItems": 4, "items": {
+          "type": "object",
+          "required": ["case", "case_fingerprint", "kind", "policy", "decision", "expected_decision", "matches_expectation"],
+          "properties": {
+            "case": {"type": "string", "minLength": 1},
+            "case_fingerprint": {"$ref": "#/$defs/fingerprint"},
+            "kind": {"enum": ["attack", "benign"]},
+            "policy": {"enum": ["preserve", "balanced_chat", "strict_exec", "code_mode"]},
+            "decision": {"enum": ["allow", "quarantine", "reject"]},
+            "expected_decision": {"enum": ["allow", "quarantine", "reject"]},
+            "matches_expectation": {"type": "boolean"}
+          }
+        }}
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "rate": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

@@ -1,0 +1,44 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Build extension
+        run: uv run maturin develop --release
+
+      - name: Run benchmarks
+        run: uv run python bench/run_benchmarks.py --out bench/results/latest.json
+
+      - name: Run pyperf microbenchmarks
+        run: uv run python bench/run_microbench.py --out bench/results/microbench_latest.json
+
+      - name: Compare to baseline (non-gating)
+        run: uv run python bench/compare_benchmarks.py --baseline bench/results/baseline.json --current bench/results/latest.json || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-input-hardener-benchmarks
+          path: |
+            bench/results/latest.json
+            bench/results/microbench_latest.json
+            bench/results/microbench_pyperf/*.json

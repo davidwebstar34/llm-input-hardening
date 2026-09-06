@@ -1,0 +1,44 @@
+[package]
+name = "llm_input_hardening"
+version = "3.0.0"
+edition = "2021"
+description = "Deterministic Unicode-aware input hardening for LLM applications."
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/davidwebstar34/llm-input-hardening"
+homepage = "https://github.com/davidwebstar34/llm-input-hardening"
+keywords = ["llm", "security", "unicode", "sanitization", "prompting"]
+categories = ["api-bindings", "text-processing"]
+include = [
+  "/Cargo.lock",
+  "/Cargo.toml",
+  "/LICENSE",
+  "/NOTICE",
+  "/licenses/**",
+  "/README.md",
+  "/python/llm_input_hardening/policy_registry.json",
+  "/src/**",
+]
+
+[lib]
+name = "llm_input_hardening"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.29.2", optional = true }
+unicode-normalization = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+# These benchmarks do not need parallel bootstrap analysis. Avoid pulling the
+# unused rayon/crossbeam dependency tree into development and audit scope.
+criterion = { version = "0.5", default-features = false, features = ["plotters", "cargo_bench_support"] }
+
+[[bench]]
+name = "sanitize_bench"
+harness = false
+
+[features]
+default = ["python"]
+python = ["pyo3/extension-module", "pyo3/abi3-py310"]

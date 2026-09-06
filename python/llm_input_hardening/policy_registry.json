@@ -1,0 +1,82 @@
+{
+  "signals": {
+    "entropy_prefix_chars": 2000,
+    "entropy_prefix_threshold": 5.0,
+    "entropy_prefix_min_chars": 200,
+    "entropy_window_chars": 256,
+    "entropy_window_stride": 64,
+    "entropy_window_threshold": 4.8,
+    "entropy_window_min_chars": 256,
+    "base64_min_chars": 64,
+    "hex_min_bytes": 32,
+    "combining_ratio_threshold": 0.2,
+    "combining_min_chars": 40
+  },
+  "aliases": {
+    "balanced": "balanced_chat",
+    "strict": "strict_exec",
+    "code": "code_mode"
+  },
+  "presets": {
+    "preserve": {
+      "normalization": "NFC",
+      "remove_bidi": true,
+      "remove_bidi_marks": false,
+      "flag_bidi_marks": true,
+      "remove_tag_chars": true,
+      "cap_variation_selectors": true,
+      "remove_junk_invisibles": true,
+      "remove_other_controls": true,
+      "remove_default_ignorables": false,
+      "tidy_whitespace": false,
+      "flag_default_ignorables": true,
+      "flag_base64ish": false,
+      "flag_combining_abuse": true
+    },
+    "balanced_chat": {
+      "normalization": "NFC",
+      "remove_bidi": true,
+      "remove_bidi_marks": false,
+      "flag_bidi_marks": true,
+      "remove_tag_chars": true,
+      "cap_variation_selectors": true,
+      "remove_junk_invisibles": true,
+      "remove_other_controls": true,
+      "remove_default_ignorables": false,
+      "tidy_whitespace": true,
+      "flag_default_ignorables": true,
+      "flag_base64ish": true,
+      "flag_combining_abuse": true
+    },
+    "strict_exec": {
+      "normalization": "NFKC",
+      "remove_bidi": true,
+      "remove_bidi_marks": true,
+      "flag_bidi_marks": true,
+      "remove_tag_chars": true,
+      "cap_variation_selectors": false,
+      "remove_junk_invisibles": true,
+      "remove_other_controls": true,
+      "remove_default_ignorables": true,
+      "tidy_whitespace": true,
+      "flag_default_ignorables": true,
+      "flag_base64ish": true,
+      "flag_combining_abuse": true
+    },
+    "code_mode": {
+      "normalization": "NFC",
+      "remove_bidi": true,
+      "remove_bidi_marks": true,
+      "flag_bidi_marks": true,
+      "remove_tag_chars": true,
+      "cap_variation_selectors": false,
+      "remove_junk_invisibles": true,
+      "remove_other_controls": true,
+      "remove_default_ignorables": true,
+      "tidy_whitespace": false,
+      "flag_default_ignorables": true,
+      "flag_base64ish": true,
+      "flag_combining_abuse": true
+    }
+  }
+}

@@ -1,0 +1,85 @@
+[
+  {
+    "name": "zwnj_preserved_in_balanced_chat",
+    "policy": "balanced_chat",
+    "input": "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645",
+    "expected_clean": "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645",
+    "removed_counts": {},
+    "flagged_counts": {}
+  },
+  {
+    "name": "emoji_zwj_chain_preserved_in_balanced_chat",
+    "policy": "balanced_chat",
+    "input": "\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67\u200d\ud83d\udc66",
+    "expected_clean": "\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67\u200d\ud83d\udc66",
+    "removed_counts": {},
+    "flagged_counts": {}
+  },
+  {
+    "name": "variation_selector_preserved_in_balanced_chat",
+    "policy": "balanced_chat",
+    "input": "\u2764\ufe0f",
+    "expected_clean": "\u2764\ufe0f",
+    "removed_counts": {},
+    "flagged_counts": {}
+  },
+  {
+    "name": "tag_char_removed_in_balanced_chat",
+    "policy": "balanced_chat",
+    "input": "A\udb40\udc41B",
+    "expected_clean": "AB",
+    "removed_counts": {
+      "tag_char": 1
+    },
+    "flagged_counts": {}
+  },
+  {
+    "name": "bidi_removed",
+    "policy": "balanced_chat",
+    "input": "abc\u202edef",
+    "expected_clean": "abcdef",
+    "removed_counts": {
+      "bidi_control": 1
+    },
+    "flagged_counts": {}
+  },
+  {
+    "name": "strict_nfkc_compatibility_fold",
+    "policy": "strict_exec",
+    "input": "\uff21\uff22\uff23\u2460\u2461\u2462",
+    "expected_clean": "ABC123",
+    "removed_counts": {},
+    "flagged_counts": {}
+  },
+  {
+    "name": "strict_exec_removes_default_ignorable",
+    "policy": "strict_exec",
+    "input": "A\u200cB",
+    "expected_clean": "AB",
+    "removed_counts": {
+      "default_ignorable": 1
+    },
+    "flagged_counts": {}
+  },
+  {
+    "name": "carriage_return_removed",
+    "policy": "balanced_chat",
+    "input": "a\r\nb\r",
+    "expected_clean": "a\nb",
+    "removed_counts": {
+      "carriage_return": 2
+    },
+    "flagged_counts": {}
+  },
+  {
+    "name": "confusable_mixed_script_flag",
+    "policy": "balanced_chat",
+    "input": "\u0440\u0430ypal",
+    "confusables_backend": "confusable_homoglyphs",
+    "expected_clean": "\u0440\u0430ypal",
+    "removed_counts": {},
+    "flagged_counts": {
+      "confusable_mixed_script": 1
+    }
+  }
+]
