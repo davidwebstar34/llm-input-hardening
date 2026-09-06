@@ -21,15 +21,15 @@ jobs:
     env:
       OPEN_REGRESSION_ISSUE: "false"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v7
 
       - name: Install dependencies
         run: uv sync --all-extras
@@ -113,14 +113,14 @@ jobs:
           cp bench/results/bakeoff_diff_latest.md .tmp/nightly-latest/diff_latest.md
 
       - name: Upload nightly latest artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: llm-input-hardener-nightly-latest
           retention-days: 30
           path: .tmp/nightly-latest
 
       - name: Upload nightly snapshot artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: llm-input-hardener-nightly-${{ github.run_id }}
           retention-days: 30
@@ -128,7 +128,7 @@ jobs:
 
       - name: Retain failed evaluation evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: llm-input-hardener-nightly-failed-${{ github.run_id }}
           retention-days: 30
@@ -165,15 +165,15 @@ jobs:
   mutation_fuzz:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v7
 
       - name: Install dependencies
         run: uv sync --all-extras
@@ -198,7 +198,7 @@ jobs:
 
       - name: Upload nightly mutation artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: llm-input-hardener-nightly-mutations-${{ github.run_id }}
           retention-days: 30
